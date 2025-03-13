@@ -80,6 +80,60 @@ app.get('/api/getData/:id', (req, res) => {
   });
 });
 
+// API-Route: Lade Nachrichten eines bestimmten Benutzers
+app.get('/api/messages/:id', (req, res) => {
+  const userId = req.params.id;
+
+  // Prüfe, ob die ID gültig ist
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'Ungültige Benutzer-ID' });
+  }
+
+  console.log(`📨 Lade Nachrichten für Benutzer ${userId}`);
+
+  // Admin bekommt ALLE Nachrichten, normale User nur ihre eigenen
+  const sql =
+    userId === '0'
+      ? 'SELECT * FROM messages ORDER BY id ASC' // Admin bekommt alle
+      : 'SELECT * FROM messages WHERE user_id = ? ORDER BY id ASC';
+
+  db.all(sql, userId !== '0' ? [userId] : [], (err, rows) => {
+    if (err) {
+      console.error('❌ Fehler beim Abrufen der Nachrichten:', err.message);
+      return res.status(500).json({ success: false, message: 'Fehler beim Laden der Nachrichten' });
+    }
+
+    if (rows.length > 0) {
+      console.log(`📬 Nachrichten für Benutzer ${userId} gefunden.`);
+      res.json({ success: true, messages: rows });
+    } else {
+      console.log(`⚠️ Keine Nachrichten für Benutzer ${userId} gefunden.`);
+      res.json({ success: false, messages: [] });
+    }
+  });
+});
+
+// API-Route: Lade alle Benutzer
+app.get('/api/users', (req, res) => {
+  const sql = 'SELECT id, name FROM users ORDER BY name ASC';
+
+  db.all(sql, [], (err, rows) => {
+    if (err) {
+      console.error('❌ Fehler beim Abrufen der Benutzer:', err.message);
+      return res.status(500).json({ success: false, message: 'Fehler beim Laden der Benutzer' });
+    }
+
+    if (rows.length > 0) {
+      console.log(`👥 ${rows.length} Benutzer gefunden.`);
+      res.json({ success: true, users: rows });
+    } else {
+      console.log('⚠️ Keine Benutzer gefunden.');
+      res.json({ success: false, users: [] });
+    }
+  });
+});
+
+
 // API für Login
 app.post('/api/login', (req, res) => {
   const { name, unternehmen } = req.body;
@@ -144,35 +198,27 @@ db.serialize(() => {
         const data = JSON.parse(msg);
         const { message, userId, senderRole } = data;
         console.log(`💬 Neue Nachricht von ${senderRole}: ${message}`);
-
-        db.serialize(() => {
-          db.run(
-            'INSERT INTO messages (text, user_id, senderRole) VALUES (?, ?, ?)',
-            [message, userId, senderRole],
-            function (err) {
-              if (err) {
-                console.error('❌ Fehler beim Speichern:', err.message);
-              } else {
-                console.log(`✅ Nachricht gespeichert, ID: ${this.lastID}`);
-
-                db.all(
-                  'SELECT text, senderRole FROM messages WHERE user_id = ? ORDER BY id ASC',
-                  [userId],
-                  (err, rows) => {
-                    if (!err) {
-                      io.emit('chatNachricht', { userId, messages: rows });
-                    } else {
-                      console.error(
-                        '❌ Fehler beim Laden der Nachrichten:',
-                        err.message
-                      );
-                    }
-                  }
-                );
-              }
+    
+        db.run(
+          'INSERT INTO messages (text, user_id, senderRole) VALUES (?, ?, ?)',
+          [message, userId, senderRole],
+          function (err) {
+            if (err) {
+              console.error('❌ Fehler beim Speichern:', err.message);
+            } else {
+              console.log(`✅ Nachricht gespeichert, ID: ${this.lastID}`);
+    
+              // 📤 Sende nur die neue Nachricht an die Clients
+              const newMessage = {
+                id: this.lastID,
+                text: message,
+                senderRole: senderRole,
+              };
+    
+              io.emit('neueNachricht', { userId, message: newMessage });
             }
-          );
-        });
+          }
+        );
       } catch (error) {
         console.error('❌ Fehler beim Parsen der Nachricht:', error);
       }
