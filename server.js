@@ -5,6 +5,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 
+require('dotenv').config();
+
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -13,11 +15,7 @@ const io = socketIo(server, {
   },
 });
 
-// CORS aktivieren
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://nadine-kickhaefer.netlify.app', // Netlify-Frontend
-];
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
 
 app.use(
   cors({
