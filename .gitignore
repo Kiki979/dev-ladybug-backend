@@ -1,1 +1,29 @@
+# Umgebungsvariablen
 .env
+
+# SSL / Zertifikate
+letsencrypt/
+*.pem
+certs/
+
+# Datenbanken
+*.db
+db_files/
+
+# Nicht-öffentliche Dateien / Services
+mailer.js
+sendnotification.js
+
+# 
+collection/
+
+# Node
+node_modules/
+package-lock.json
+
+# Nur bestimmte öffentliche Dateien erlauben
+public/*
+
+# Sonstiges
+*.log
+*.zip
