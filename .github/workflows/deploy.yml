@@ -22,5 +22,10 @@ jobs:
             cd /home/nadine/website-server
             git pull --rebase origin main
             docker compose up -d --build
+            curl -s \
+              --form-string "token=${{ secrets.APITOKEN }}" \
+              --form-string "user=${{ secrets.USERKEY }}" \
+              --form-string "message=✅ Deployment auf dem Raspberry Pi abgeschlossen" \
+              https://api.pushover.net:443/1/messages.json
           timeout: 1800s
           command_timeout: 1200s
