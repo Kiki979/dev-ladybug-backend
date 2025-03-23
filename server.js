@@ -323,7 +323,7 @@ db.serialize(() => {
   });
 });
 
-// ✅ HTTP-Server für Weiterleitung auf HTTPS
+// HTTP-Server für Weiterleitung auf HTTPS
 httpServer.listen(3001, () => {
   console.log('🔄 HTTP-Server auf http://localhost:3001 (leitet auf HTTPS um)');
 });
