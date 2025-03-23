@@ -22,3 +22,5 @@ jobs:
             cd /home/nadine/website-server
             git pull --rebase origin main
             docker compose up -d --build
+          timeout: 1800s
+          command_timeout: 1200s
