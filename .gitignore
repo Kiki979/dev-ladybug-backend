@@ -19,7 +19,6 @@ collection/
 
 # Node
 node_modules/
-package-lock.json
 
 # Keine öffentlichen Dateien erlauben
 public/*
@@ -27,3 +26,5 @@ public/*
 # Sonstiges
 *.log
 *.zip
+
+docker-compose.yml
