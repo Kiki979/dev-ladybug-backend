@@ -20,5 +20,5 @@ jobs:
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
             cd /home/nadine/website-server
-            git pull origin main
+            git pull --rebase origin main
             docker compose up -d --build
