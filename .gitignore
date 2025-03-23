@@ -21,7 +21,7 @@ collection/
 node_modules/
 package-lock.json
 
-# Nur bestimmte öffentliche Dateien erlauben
+# Keine öffentlichen Dateien erlauben
 public/*
 
 # Sonstiges
