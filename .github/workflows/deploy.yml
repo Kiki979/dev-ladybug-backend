@@ -19,6 +19,6 @@ jobs:
           username: ${{ secrets.PI_USER }}
           key: ${{ secrets.PI_SSH_KEY }}
           script: |
-            cd ~/home/nadine/website-server
+            cd /home/nadine/website-server
             git pull origin main
             docker compose up -d --build
