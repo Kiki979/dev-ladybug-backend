@@ -176,7 +176,7 @@ app.get('/api/messages/:id', (req, res) => {
   });
 });
 
-// API-Route: Lade alle Benutzer
+// Lade alle Benutzer
 app.get('/api/users', (req, res) => {
   const sql = 'SELECT id, name FROM users ORDER BY name ASC';
 
@@ -198,7 +198,37 @@ app.get('/api/users', (req, res) => {
   });
 });
 
-// ✅ API für Login
+// Nutzer löschen
+app.delete('/api/user/:id', (req, res) => {
+  const { id } = req.params;
+
+  db.serialize(() => {
+    db.run('BEGIN TRANSACTION');
+
+    // 1. Nachrichten löschen
+    db.run(`DELETE FROM messages WHERE user_id = ?`, [id], function (err) {
+      if (err) {
+        console.error('❌ Fehler beim Löschen der Nachrichten:', err);
+        db.run('ROLLBACK');
+        return res.status(500).json({ success: false });
+      }
+
+      // 2. Nutzer löschen
+      db.run(`DELETE FROM users WHERE id = ?`, [id], function (err2) {
+        if (err2) {
+          console.error('❌ Fehler beim Löschen des Nutzers:', err2);
+          db.run('ROLLBACK');
+          return res.status(500).json({ success: false });
+        }
+
+        db.run('COMMIT');
+        return res.json({ success: true });
+      });
+    });
+  });
+});
+
+// API für Login
 app.post('/api/login', (req, res) => {
   const { name, unternehmen } = req.body;
   console.log('🔑 Login-Anfrage:', name, unternehmen);
@@ -237,10 +267,13 @@ app.post('/api/login', (req, res) => {
 
 // Neuen Nutzer anlegen
 app.post('/api/createUser', (req, res) => {
-  const { name, anrede, betreff, unternehmen, anschreiben } = req.body;
+  const { name, anrede, betreff, unternehmen, anschreiben, startMessage } =
+    req.body;
 
   if (!name || !anrede || !betreff || !unternehmen || !anschreiben) {
-    return res.status(400).json({ success: false, message: 'Bitte alle Felder ausfüllen.' });
+    return res
+      .status(400)
+      .json({ success: false, message: 'Bitte alle Felder ausfüllen.' });
   }
 
   db.run(
@@ -248,11 +281,20 @@ app.post('/api/createUser', (req, res) => {
     [name, anrede, betreff, unternehmen, anschreiben],
     function (err) {
       if (err) {
-        console.error('❌ Fehler beim Anlegen des Benutzers:', err);
-        return res.status(500).json({ success: false, message: 'Fehler beim Speichern.' });
+        console.error('❌ Fehler beim Anlegen des Nutzers:', err);
+        return res.status(500).json({ success: false });
       }
 
-      return res.status(200).json({ success: true, id: this.lastID });
+      const userId = this.lastID;
+
+      if (startMessage && startMessage.trim() !== '') {
+        db.run(
+          `INSERT INTO messages (text, user_id, senderRole) VALUES (?, ?, ?)`,
+          [startMessage, userId, 'admin']
+        );
+      }
+
+      return res.status(200).json({ success: true, id: userId });
     }
   );
 });
