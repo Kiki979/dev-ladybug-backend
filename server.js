@@ -235,6 +235,41 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Neuen Nutzer anlegen
+app.post('/api/createUser', (req, res) => {
+  const { name, anrede, betreff, unternehmen, anschreiben } = req.body;
+
+  if (!name || !anrede || !betreff || !unternehmen || !anschreiben) {
+    return res.status(400).json({ success: false, message: 'Bitte alle Felder ausfüllen.' });
+  }
+
+  db.run(
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben) VALUES (?, ?, ?, ?, ?)`,
+    [name, anrede, betreff, unternehmen, anschreiben],
+    function (err) {
+      if (err) {
+        console.error('❌ Fehler beim Anlegen des Benutzers:', err);
+        return res.status(500).json({ success: false, message: 'Fehler beim Speichern.' });
+      }
+
+      return res.status(200).json({ success: true, id: this.lastID });
+    }
+  );
+});
+
+// Nachricht löschen
+app.delete('/api/message/:id', (req, res) => {
+  const msgId = req.params.id;
+  db.run('DELETE FROM messages WHERE id = ?', [msgId], function (err) {
+    if (err) {
+      console.error('❌ Fehler beim Löschen der Nachricht:', err.message);
+      return res.status(500).json({ success: false });
+    }
+    console.log(`🗑️ Nachricht mit ID ${msgId} gelöscht.`);
+    res.json({ success: true });
+  });
+});
+
 // Socket.io für den Chat mit Admin-Unterstützung
 db.serialize(() => {
   io.on('connection', (socket) => {
