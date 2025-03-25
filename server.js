@@ -178,7 +178,8 @@ app.get('/api/messages/:id', (req, res) => {
 
 // Lade alle Benutzer
 app.get('/api/users', (req, res) => {
-  const sql = 'SELECT id, name FROM users ORDER BY name ASC';
+  const sql =
+    'SELECT id, name, anrede, betreff, unternehmen AS company FROM users';
 
   db.all(sql, [], (err, rows) => {
     if (err) {
