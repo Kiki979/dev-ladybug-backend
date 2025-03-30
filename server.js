@@ -111,6 +111,15 @@ db.serialize(() => {
       senderRole TEXT
     )`
   );
+  db.run(`ALTER TABLE messages ADD COLUMN receiver_id INTEGER`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('❌ Fehler beim Hinzufügen von receiver_id:', err.message);
+    } else {
+      console.log(
+        "📦 Spalte 'receiver_id' erfolgreich hinzugefügt oder bereits vorhanden."
+      );
+    }
+  });
 });
 
 db.run('PRAGMA journal_mode=DELETE;');
@@ -300,6 +309,28 @@ app.post('/api/createUser', (req, res) => {
   );
 });
 
+// Nutzererstellung für Nutzer
+app.post('/api/registerSimpleUser', (req, res) => {
+  const { name, unternehmen } = req.body;
+
+  if (!name || !unternehmen) {
+    return res.status(400).json({ success: false, message: 'Name und Unternehmen erforderlich.' });
+  }
+
+  db.run(
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben) VALUES (?, '', '', ?, '')`,
+    [name.trim(), unternehmen.trim()],
+    function (err) {
+      if (err) {
+        console.error('❌ Fehler beim Erstellen des Nutzers:', err.message);
+        return res.status(500).json({ success: false });
+      }
+
+      res.json({ success: true, userId: this.lastID });
+    }
+  );
+});
+
 // Nachricht löschen
 app.delete('/api/message/:id', (req, res) => {
   const msgId = req.params.id;
@@ -342,12 +373,12 @@ db.serialize(() => {
     socket.on('chatNachricht', (msg) => {
       try {
         const data = JSON.parse(msg);
-        const { message, userId, senderRole } = data;
+        const { message, userId, receiverId, senderRole } = data;
         console.log(`💬 Neue Nachricht von ${userId}: ${message}`);
 
         db.run(
-          'INSERT INTO messages (text, user_id, senderRole) VALUES (?, ?, ?)',
-          [message, userId, senderRole],
+          'INSERT INTO messages (text, user_id, receiver_id, senderRole) VALUES (?, ?, ?, ?)',
+          [message, userId, receiverId, senderRole],
           function (err) {
             if (err) {
               console.error('❌ Fehler beim Speichern:', err.message);
@@ -357,9 +388,10 @@ db.serialize(() => {
               const newMessage = {
                 id: this.lastID,
                 text: message,
-                senderRole: senderRole,
+                senderRole,
+                userId,
+                receiverId,
               };
-
               io.emit('neueNachricht', { userId, message: newMessage });
 
               // 📌 Richtig: User-Namen aus der Datenbank abrufen
