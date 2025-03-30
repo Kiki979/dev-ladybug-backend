@@ -282,8 +282,15 @@ app.post('/api/login', (req, res) => {
 
 // Neuen Nutzer anlegen
 app.post('/api/createUser', (req, res) => {
-  const { name, anrede, betreff, unternehmen, anschreiben, startMessage } =
-    req.body;
+  const {
+    name,
+    anrede,
+    betreff,
+    unternehmen,
+    anschreiben,
+    startMessage,
+    createdBy,
+  } = req.body;
 
   if (!name || !anrede || !betreff || !unternehmen || !anschreiben) {
     return res
@@ -292,8 +299,9 @@ app.post('/api/createUser', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben) VALUES (?, ?, ?, ?, ?)`,
-    [name, anrede, betreff, unternehmen, anschreiben],
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by) 
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [name, anrede, betreff, unternehmen, anschreiben, createdBy ?? 0],
     function (err) {
       if (err) {
         console.error('❌ Fehler beim Anlegen des Nutzers:', err);
@@ -326,7 +334,7 @@ app.post('/api/registerSimpleUser', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by) 
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by)
      VALUES (?, '', '', ?, '', ?)`,
     [name.trim(), unternehmen.trim(), createdBy],
     function (err) {
