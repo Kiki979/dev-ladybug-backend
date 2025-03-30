@@ -101,6 +101,11 @@ db.serialize(() => {
       anschreiben TEXT
     )`
   );
+  db.run(`ALTER TABLE users ADD COLUMN created_by INTEGER`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('❌ Fehler beim Hinzufügen von created_by:', err.message);
+    }
+  });
 });
 db.serialize(() => {
   db.run(
@@ -311,15 +316,19 @@ app.post('/api/createUser', (req, res) => {
 
 // Nutzererstellung für Nutzer
 app.post('/api/registerSimpleUser', (req, res) => {
-  const { name, unternehmen } = req.body;
+  const { name, unternehmen, createdBy } = req.body;
 
-  if (!name || !unternehmen) {
-    return res.status(400).json({ success: false, message: 'Name und Unternehmen erforderlich.' });
+  if (!name || !unternehmen || createdBy === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: 'Name, Unternehmen und createdBy erforderlich.',
+    });
   }
 
   db.run(
-    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben) VALUES (?, '', '', ?, '')`,
-    [name.trim(), unternehmen.trim()],
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by) 
+     VALUES (?, '', '', ?, '', ?)`,
+    [name.trim(), unternehmen.trim(), createdBy],
     function (err) {
       if (err) {
         console.error('❌ Fehler beim Erstellen des Nutzers:', err.message);
@@ -330,6 +339,7 @@ app.post('/api/registerSimpleUser', (req, res) => {
     }
   );
 });
+
 
 // Nachricht löschen
 app.delete('/api/message/:id', (req, res) => {
