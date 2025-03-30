@@ -326,8 +326,8 @@ app.post('/api/registerSimpleUser', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by) 
-     VALUES (?, '', '', ?, '', ?)`,
+    `INSERT INTO users (name, unternehmen, created_by) 
+     VALUES (?, ?, ?)`,
     [name.trim(), unternehmen.trim(), createdBy],
     function (err) {
       if (err) {
@@ -340,11 +340,12 @@ app.post('/api/registerSimpleUser', (req, res) => {
   );
 });
 
+
 app.get('/api/users/:creatorId', (req, res) => {
   const creatorId = parseInt(req.params.creatorId);
 
   db.all(
-    `SELECT id, name, anrede, betreff, unternehmen AS company 
+    `SELECT id, name, unternehmen AS company 
      FROM users WHERE created_by = ?`,
     [creatorId],
     (err, rows) => {
