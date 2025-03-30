@@ -326,8 +326,8 @@ app.post('/api/registerSimpleUser', (req, res) => {
   }
 
   db.run(
-    `INSERT INTO users (name, unternehmen, created_by) 
-     VALUES (?, ?, ?)`,
+    `INSERT INTO users (name, anrede, betreff, unternehmen, anschreiben, created_by) 
+     VALUES (?, '', '', ?, '', ?)`,
     [name.trim(), unternehmen.trim(), createdBy],
     function (err) {
       if (err) {
@@ -339,7 +339,6 @@ app.post('/api/registerSimpleUser', (req, res) => {
     }
   );
 });
-
 
 app.get('/api/users/:creatorId', (req, res) => {
   const creatorId = parseInt(req.params.creatorId);
@@ -357,7 +356,6 @@ app.get('/api/users/:creatorId', (req, res) => {
     }
   );
 });
-
 
 // Nachricht löschen
 app.delete('/api/message/:id', (req, res) => {
