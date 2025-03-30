@@ -340,6 +340,23 @@ app.post('/api/registerSimpleUser', (req, res) => {
   );
 });
 
+app.get('/api/users/:creatorId', (req, res) => {
+  const creatorId = parseInt(req.params.creatorId);
+
+  db.all(
+    `SELECT id, name, anrede, betreff, unternehmen AS company 
+     FROM users WHERE created_by = ?`,
+    [creatorId],
+    (err, rows) => {
+      if (err) {
+        console.error('❌ Fehler beim Abrufen eigener Nutzer:', err.message);
+        return res.status(500).json({ success: false });
+      }
+      res.json({ success: true, users: rows });
+    }
+  );
+});
+
 
 // Nachricht löschen
 app.delete('/api/message/:id', (req, res) => {
