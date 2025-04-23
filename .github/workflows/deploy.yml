@@ -27,5 +27,5 @@ jobs:
               --form-string "user=${{ secrets.USERKEY }}" \
               --form-string "message=✅ Deployment auf dem Raspberry Pi abgeschlossen" \
               https://api.pushover.net:443/1/messages.json
-          timeout: 1800s
-          command_timeout: 1200s
+          timeout: 3600s
+          command_timeout: 2400s
