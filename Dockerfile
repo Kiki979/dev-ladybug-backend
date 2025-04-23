@@ -1,26 +1,25 @@
-FROM node:22-alpine
+FROM node:20-bullseye
 
+# Setze Arbeitsverzeichnis
 WORKDIR /app
 
-# Install system deps
-RUN apk add --no-cache \
+# Sicherheitsupdates + Systemabhängigkeiten installieren
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
   python3 \
-  py3-pip \
-  py3-setuptools \
   make \
   g++ \
-  sqlite
+  sqlite3 \
+  && rm -rf /var/lib/apt/lists/*
 
-# Optional: symlink "python" if needed
-RUN ln -sf python3 /usr/bin/python
-
-# Kopiere und installiere dependencies
+# Dependencies installieren
 COPY package.json ./
 RUN npm install --build-from-source sqlite3
 
-# Restliche Dateien kopieren
+# Restliche Dateien
 COPY . .
 
+# Ports öffnen
 EXPOSE 3001 443
 
+# Startbefehl
 CMD ["node", "server.js"]
