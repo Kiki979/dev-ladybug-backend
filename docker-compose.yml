@@ -1,0 +1,14 @@
+services:
+  chatserver:
+    container_name: chatserver
+    build: .
+    ports:
+      - '443:443'
+      - '3001:3001'
+    volumes:
+      - ./chat_new_7.db:/app/chat_new_7.db
+      - ./letsencrypt:/app/letsencrypt
+      - ./public:/app/public
+    env_file:
+      - .env
+    restart: unless-stopped
