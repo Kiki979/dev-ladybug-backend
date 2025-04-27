@@ -92,8 +92,7 @@ db.serialize(() => {
     betreff TEXT,
     unternehmen TEXT,
       anschreiben TEXT
-    )`
-  );
+    )`);
   db.run(`ALTER TABLE users ADD COLUMN created_by INTEGER`, (err) => {
     if (err && !err.message.includes('duplicate column name')) {
       console.error('❌ Fehler beim Hinzufügen von created_by:', err.message);
@@ -175,7 +174,7 @@ app.get('/api/messages/:id', (req, res) => {
 
     if (rows.length > 0) {
       console.log(`📬 Nachrichten für Benutzer ${userId} gefunden.`);
-    res.json({ success: true, messages: rows });
+      res.json({ success: true, messages: rows });
     } else {
       console.log(`⚠️ Keine Nachrichten für Benutzer ${userId} gefunden.`);
       res.json({ success: false, messages: [] });
@@ -458,15 +457,30 @@ db.serialize(() => {
       );
     });
 
-    // 📞 WebRTC Telefonie Signalisierung
-    socket.on('call-user', ({ offer }) => {
-      console.log('📞 Anruf gestartet');
-      socket.broadcast.emit('call-made', { offer });
+    // 📞 WebRTC gezielte Signalisierung für Telefonie
+    socket.on('call-user', ({ targetId, offer }) => {
+      console.log(`📞 Anruf von ${socket.userId} an ${targetId}`);
+      io.to(targetId.toString()).emit('incoming-call', {
+        offer,
+        callerId: socket.userId,
+      });
     });
 
-    socket.on('make-answer', ({ answer }) => {
-      console.log('📞 Antwort auf Anruf');
-      socket.broadcast.emit('answer-made', { answer });
+    socket.on('accept-call', ({ callerId, answer }) => {
+      console.log(`✅ Anruf von ${callerId} angenommen.`);
+      io.to(callerId.toString()).emit('call-accepted', { answer });
+    });
+
+    socket.on('reject-call', ({ callerId }) => {
+      console.log(`❌ Anruf von ${callerId} abgelehnt.`);
+      io.to(callerId.toString()).emit('call-rejected');
+    });
+
+    // Benutzer richtig Räume beitreten lassen
+    socket.on('userConnected', ({ userId }) => {
+      socket.userId = userId;
+      socket.join(userId.toString());
+      // (Dein Rest bleibt bestehen!)
     });
   });
 });
