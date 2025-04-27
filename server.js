@@ -372,10 +372,14 @@ app.delete('/api/message/:id', (req, res) => {
 
 // Socket.io für den Chat mit Admin-Unterstützung
 db.serialize(() => {
+  // 📢 WebSocket-Verbindungen verwalten
   io.on('connection', (socket) => {
+    console.log(`🔗 Socket verbunden: ${socket.id}`);
+
     socket.on('userConnected', ({ userId }) => {
-      console.log(`🔹 User ${userId} ist verbunden.`);
+      console.log(`🟢 User ${userId} ist verbunden.`);
       socket.userId = userId;
+      socket.join(userId.toString());
 
       const sql =
         userId === 0
@@ -410,7 +414,6 @@ db.serialize(() => {
               console.error('❌ Fehler beim Speichern:', err.message);
             } else {
               console.log(`✅ Nachricht gespeichert, ID: ${this.lastID}`);
-
               const newMessage = {
                 id: this.lastID,
                 text: message,
@@ -420,7 +423,6 @@ db.serialize(() => {
               };
               io.emit('neueNachricht', { userId, message: newMessage });
 
-              // 📌 Richtig: User-Namen aus der Datenbank abrufen
               db.get(
                 'SELECT name FROM users WHERE id = ?',
                 [userId],
@@ -447,17 +449,15 @@ db.serialize(() => {
           }
         );
       } catch (error) {
-        console.error('Fehler beim Parsen der Nachricht:', error);
+        console.error('❌ Fehler beim Parsen der Nachricht:', error);
       }
     });
 
     socket.on('disconnect', () => {
-      console.log(
-        `❌ User ${socket.userId || 'Unbekannt'} hat die Verbindung getrennt.`
-      );
+      console.log(`❌ Verbindung getrennt: ${socket.userId || 'Unbekannt'}`);
     });
 
-    // 📞 WebRTC gezielte Signalisierung für Telefonie
+    // 📞 WebRTC Anruf-Signalisierung
     socket.on('call-user', ({ targetId, offer }) => {
       console.log(`📞 Anruf gestartet von ${socket.userId} an ${targetId}`);
       io.to(targetId.toString()).emit('incoming-call', {
@@ -474,13 +474,6 @@ db.serialize(() => {
     socket.on('reject-call', ({ callerId }) => {
       console.log(`❌ Anruf abgelehnt von ${socket.userId}`);
       io.to(callerId.toString()).emit('call-rejected');
-    });
-
-    // Benutzer ordnungsgemäß einem Raum zuordnen
-    socket.on('userConnected', ({ userId }) => {
-      socket.userId = userId;
-      socket.join(userId.toString());
-      console.log(`🟢 User ${userId} ist beigetreten.`);
     });
   });
 });
