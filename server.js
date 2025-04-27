@@ -459,7 +459,7 @@ db.serialize(() => {
 
     // 📞 WebRTC gezielte Signalisierung für Telefonie
     socket.on('call-user', ({ targetId, offer }) => {
-      console.log(`📞 Anruf von ${socket.userId} an ${targetId}`);
+      console.log(`📞 Anruf gestartet von ${socket.userId} an ${targetId}`);
       io.to(targetId.toString()).emit('incoming-call', {
         offer,
         callerId: socket.userId,
@@ -467,20 +467,20 @@ db.serialize(() => {
     });
 
     socket.on('accept-call', ({ callerId, answer }) => {
-      console.log(`✅ Anruf von ${callerId} angenommen.`);
+      console.log(`✅ Anruf angenommen von ${socket.userId}`);
       io.to(callerId.toString()).emit('call-accepted', { answer });
     });
 
     socket.on('reject-call', ({ callerId }) => {
-      console.log(`❌ Anruf von ${callerId} abgelehnt.`);
+      console.log(`❌ Anruf abgelehnt von ${socket.userId}`);
       io.to(callerId.toString()).emit('call-rejected');
     });
 
-    // Benutzer richtig Räume beitreten lassen
+    // Benutzer ordnungsgemäß einem Raum zuordnen
     socket.on('userConnected', ({ userId }) => {
       socket.userId = userId;
       socket.join(userId.toString());
-      // (Dein Rest bleibt bestehen!)
+      console.log(`🟢 User ${userId} ist beigetreten.`);
     });
   });
 });
