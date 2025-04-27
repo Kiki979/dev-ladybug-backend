@@ -20,7 +20,6 @@ const sendNotification = async (message, sound) => {
         priority: 1,
       },
     });
-
     console.log('Benachrichtigung gesendet:', response.data);
   } catch (error) {
     console.error('Fehler beim Senden der Benachrichtigung:', error);
@@ -36,11 +35,9 @@ const httpsOptions = {
   cert: fs.readFileSync(`${CERT_PATH}fullchain.pem`),
 };
 
-// ✅ HTTPS-Server zuerst erstellen
 const httpsServer = https.createServer(httpsOptions, app);
 const httpServer = http.createServer(app);
 
-// ✅ WebSockets an HTTPS binden
 const io = socketIo(httpsServer, {
   cors: {
     origin: process.env.SOCKET_ORIGINS?.split(',') || [],
@@ -51,7 +48,6 @@ const io = socketIo(httpsServer, {
   transports: ['websocket', 'polling'],
 });
 
-// ✅ CORS & Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
   : [];
@@ -69,12 +65,10 @@ app.use(
   })
 );
 
-// Middleware für JSON-Parsing
 app.use(express.json());
-
-// Bereitstellung statischer Dateien
 app.use(express.static('public'));
 
+// ✅ API für Zertifikate-Challenge
 app.get('/.well-known/acme-challenge/:content', (req, res) => {
   const filePath = `public/.well-known/acme-challenge/${req.params.content}`;
   if (fs.existsSync(filePath)) {
@@ -84,20 +78,19 @@ app.get('/.well-known/acme-challenge/:content', (req, res) => {
   }
 });
 
-// Datenbank erstellen oder öffnen
+// ✅ SQLite Datenbank
 const db = new sqlite3.Database(process.env.DB_PATH, (err) => {
   if (err) console.error('Datenbank-Fehler:', err.message);
   else console.log('SQLite-Datenbank verbunden.');
 });
 
 db.serialize(() => {
-  db.run(
-    `CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY, 
-      name TEXT, 
-      anrede TEXT, 
-      betreff TEXT, 
-      unternehmen TEXT, 
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    anrede TEXT,
+    betreff TEXT,
+    unternehmen TEXT,
       anschreiben TEXT
     )`
   );
@@ -110,9 +103,9 @@ db.serialize(() => {
 db.serialize(() => {
   db.run(
     `CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY, 
-      text TEXT, 
-      user_id INTEGER, 
+    id INTEGER PRIMARY KEY,
+    text TEXT,
+    user_id INTEGER,
       senderRole TEXT
     )`
   );
@@ -182,7 +175,7 @@ app.get('/api/messages/:id', (req, res) => {
 
     if (rows.length > 0) {
       console.log(`📬 Nachrichten für Benutzer ${userId} gefunden.`);
-      res.json({ success: true, messages: rows });
+    res.json({ success: true, messages: rows });
     } else {
       console.log(`⚠️ Keine Nachrichten für Benutzer ${userId} gefunden.`);
       res.json({ success: false, messages: [] });
@@ -455,7 +448,7 @@ db.serialize(() => {
           }
         );
       } catch (error) {
-        console.error('❌ Fehler beim Parsen der Nachricht:', error);
+        console.error('Fehler beim Parsen der Nachricht:', error);
       }
     });
 
@@ -464,17 +457,28 @@ db.serialize(() => {
         `❌ User ${socket.userId || 'Unbekannt'} hat die Verbindung getrennt.`
       );
     });
+
+    // 📞 WebRTC Telefonie Signalisierung
+    socket.on('call-user', ({ offer }) => {
+      console.log('📞 Anruf gestartet');
+      socket.broadcast.emit('call-made', { offer });
+    });
+
+    socket.on('make-answer', ({ answer }) => {
+      console.log('📞 Antwort auf Anruf');
+      socket.broadcast.emit('answer-made', { answer });
+    });
   });
 });
 
-
-// HTTP-Server für Weiterleitung auf HTTPS
+// ✅ Server starten
 httpServer.listen(3001, () => {
   console.log('🔄 HTTP-Server auf http://localhost:3001 (leitet auf HTTPS um)');
 });
 
 httpsServer.listen(443, () => {
   console.log(
-    `🔒 HTTPS-Server mit WebSockets läuft auf ${process.env.PUBLIC_URL}`
+    '🔒 HTTPS-Server mit WebSockets läuft auf',
+    process.env.PUBLIC_URL
   );
 });
