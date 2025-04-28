@@ -453,27 +453,35 @@ db.serialize(() => {
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log(`❌ Verbindung getrennt: ${socket.userId || 'Unbekannt'}`);
-    });
-
     // 📞 WebRTC Anruf-Signalisierung
-    socket.on('call-user', ({ targetId, offer }) => {
-      console.log(`📞 Anruf gestartet von ${socket.userId} an ${targetId}`);
-      io.to(targetId.toString()).emit('incoming-call', {
-        offer,
-        callerId: socket.userId,
-      });
-    });
 
+    socket.on('call-user', ({ targetId, offer }) => {
+      console.log(`📞 Anruf gestartet: ${socket.userId} → ${targetId}`);
+      io.to(targetId.toString()).emit('incoming-call', { offer, callerId: socket.userId });
+    });
+  
     socket.on('accept-call', ({ callerId, answer }) => {
-      console.log(`✅ Anruf angenommen von ${socket.userId}`);
+      console.log(`✅ Anruf angenommen von ${callerId}`);
       io.to(callerId.toString()).emit('call-accepted', { answer });
     });
-
+  
     socket.on('reject-call', ({ callerId }) => {
-      console.log(`❌ Anruf abgelehnt von ${socket.userId}`);
+      console.log(`❌ Anruf abgelehnt von ${callerId}`);
       io.to(callerId.toString()).emit('call-rejected');
+    });
+  
+    socket.on('ice-candidate', ({ targetId, candidate }) => {
+      console.log(`🔵 ICE Candidate weiterleiten an ${targetId}`);
+      io.to(targetId.toString()).emit('ice-candidate', { candidate });
+    });
+  
+    socket.on('hangup', ({ targetId }) => {
+      console.log(`🔴 Auflegen: ${socket.userId} → ${targetId}`);
+      io.to(targetId.toString()).emit('call-ended');
+    });
+  
+    socket.on('disconnect', () => {
+      console.log(`🔴 Verbindung getrennt: ${socket.id}`);
     });
   });
 });
