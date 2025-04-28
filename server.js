@@ -40,7 +40,7 @@ const httpServer = http.createServer(app);
 
 const io = socketIo(httpsServer, {
   cors: {
-    origin: process.env.SOCKET_ORIGINS?.split(',') || [],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [],
     methods: ['GET', 'POST'],
     allowedHeaders: ['my-custom-header'],
     credentials: true,
