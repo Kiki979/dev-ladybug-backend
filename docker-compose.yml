@@ -7,8 +7,9 @@ services:
       - '3001:3001'
     volumes:
       - ./chat_new_7.db:/app/chat_new_7.db
-      - ./letsencrypt:/app/letsencrypt
+      - /etc/letsencrypt/live/apitoraspi.ddns.net:/app/letsencrypt:ro 
       - ./public:/app/public
     env_file:
       - .env
     restart: unless-stopped
+
